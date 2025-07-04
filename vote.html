@@ -177,56 +177,66 @@
         }
 
         function displayContestants() {
-            const contestants = votingSystem.getContestants();
             const contestantsList = document.getElementById('contestantsList');
-            contestantsList.innerHTML = '';
+            contestantsList.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-            if (contestants.length === 0) {
-                contestantsList.innerHTML = `
-                    <div class="col-12 text-center">
-                        <div class="alert alert-info" role="alert">
-                            暂无选手参赛，请等待选手登记。
-                        </div>
-                    </div>
-                `;
-                return;
-            }
+            votingSystem.getContestants().then(contestants => {
+                contestantsList.innerHTML = '';
 
-            contestants.forEach(contestant => {
-                const hasVoted = votingSystem.hasVotedFor(currentVoter, contestant.id);
-                const col = document.createElement('div');
-                col.className = 'col-md-4 mb-4';
-                
-                col.innerHTML = `
-                    <div class="card contestant-card animate__animated animate__fadeIn">
-                        <div class="card-body">
-                            <h5 class="card-title">${contestant.name}</h5>
-                            <p class="card-text">演唱: ${contestant.song === '未指定' ? '<span class="text-muted">未指定歌曲</span>' : contestant.song}</p>
-                            <p class="vote-count">当前票数: ${contestant.votes || 0}</p>
-                            <div class="d-grid gap-2">
-                                <button 
-                                    class="btn ${hasVoted ? 'btn-secondary' : 'btn-primary'} btn-custom" 
-                                    onclick="voteForContestant('${contestant.id}')"
-                                    ${hasVoted ? 'disabled' : ''}>
-                                    ${hasVoted ? '已投票' : '投票'}
-                                </button>
-                                <button 
-                                    class="btn btn-outline-primary btn-custom"
-                                    onclick="showQRCode('${contestant.id}', '${contestant.name}')"
-                                    ${hasVoted ? 'disabled' : ''}>
-                                    显示投票二维码
-                                </button>
+                if (contestants.length === 0) {
+                    contestantsList.innerHTML = `
+                        <div class="col-12 text-center">
+                            <div class="alert alert-info" role="alert">
+                                暂无选手参赛，请等待选手名单更新。
                             </div>
                         </div>
+                    `;
+                    return;
+                }
+
+                contestants.forEach(contestant => {
+                    const hasVoted = votingSystem.hasVotedFor(currentVoter, contestant.id);
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-4';
+                    
+                    col.innerHTML = `
+                        <div class="card contestant-card animate__animated animate__fadeIn">
+                            <div class="card-body">
+                                <h5 class="card-title">${contestant.name}</h5>
+                                <p class="card-text">演唱: ${contestant.song === '未指定' ? '<span class="text-muted">未指定歌曲</span>' : contestant.song}</p>
+                                <p class="vote-count">当前票数: ${contestant.votes}</p>
+                                <div class="d-grid gap-2">
+                                    <button 
+                                        class="btn ${hasVoted ? 'btn-secondary' : 'btn-primary'} btn-custom" 
+                                        onclick="voteForContestant('${contestant.id}')"
+                                        ${hasVoted ? 'disabled' : ''}>
+                                        ${hasVoted ? '已投票' : '投票'}
+                                    </button>
+                                    <button 
+                                        class="btn btn-outline-primary btn-custom"
+                                        onclick="showQRCode('${contestant.id}', '${contestant.name}')"
+                                        ${hasVoted ? 'disabled' : ''}>
+                                        显示投票二维码
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    contestantsList.appendChild(col);
+                });
+            }).catch(error => {
+                contestantsList.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-danger" role="alert">
+                            加载选手信息失败：${error.message}
+                        </div>
                     </div>
                 `;
-                contestantsList.appendChild(col);
             });
         }
 
         function voteForContestant(contestantId) {
-            try {
-                votingSystem.vote(currentVoter, contestantId);
+            votingSystem.vote(currentVoter, contestantId).then(() => {
                 updateRemainingVotes();
                 displayContestants();
                 
@@ -248,14 +258,14 @@
                         confirmButtonText: '确定'
                     });
                 }
-            } catch (error) {
+            }).catch(error => {
                 Swal.fire({
                     title: '投票失败！',
                     text: error.message,
                     icon: 'error',
                     confirmButtonText: '确定'
                 });
-            }
+            });
         }
 
         // 检查URL参数是否包含投票信息

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>选手登记 - 歌唱比赛投票系统</title>
+    <title>参赛选手 - 歌唱比赛投票系统</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
@@ -41,31 +41,27 @@
             font-size: 0.9em;
             color: rgba(255, 255, 255, 0.7);
         }
-        .register-btn {
-            margin-left: 15px;
-        }
-        .registered {
-            background: rgba(40, 167, 69, 0.2) !important;
-        }
-        .registered .register-btn {
-            display: none;
+        .contestant-number {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-right: 15px;
+            color: rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="animate__animated animate__fadeIn">选手登记</h1>
+        <h1 class="animate__animated animate__fadeIn">参赛选手</h1>
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card animate__animated animate__fadeInUp">
                     <div class="card-body">
-                        <h4 class="text-center mb-3">参赛选手名单</h4>
+                        <h4 class="text-center mb-3">选手名单</h4>
                         <div id="contestantList" class="contestant-list">
                             <!-- 选手列表将通过JavaScript动态加载 -->
                         </div>
                         <div class="text-center mt-4">
-                            <button id="registerAllBtn" class="btn btn-primary btn-lg btn-custom">一键登记所有选手</button>
-                            <a href="index.html" class="btn btn-secondary btn-lg btn-custom ms-2">返回首页</a>
+                            <a href="index.html" class="btn btn-primary btn-lg btn-custom">返回首页</a>
                         </div>
                     </div>
                 </div>
@@ -81,134 +77,52 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/storage.js"></script>
     <script>
-        // 从song.txt读取选手名单
-        async function loadContestants() {
-            try {
-                const response = await fetch('song.txt');
-                if (!response.ok) {
-                    throw new Error('无法加载选手名单文件');
-                }
-                const text = await response.text();
-                return text.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line) // 过滤空行
-                    .map(line => {
-                        const parts = line.split(/\s+/);
-                        return {
-                            name: parts[0],
-                            song: parts.slice(1).join(' ') || '未指定'
-                        };
-                    });
-            } catch (error) {
-                console.error('加载选手名单失败:', error);
-                return [];
-            }
-        }
-
-        // 检查选手是否已登记
-        function isContestantRegistered(name) {
-            const contestants = votingSystem.getContestants();
-            return contestants.some(c => c.name === name);
-        }
-
-        // 注册单个选手
-        function registerContestant(name, song) {
-            try {
-                if (!isContestantRegistered(name)) {
-                    votingSystem.addContestant(name, song);
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                console.error('注册选手失败:', error);
-                return false;
-            }
-        }
-
         // 显示选手列表
-        function displayContestants(contestants) {
+        async function displayContestants() {
             const contestantList = document.getElementById('contestantList');
-            contestantList.innerHTML = '';
+            contestantList.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-            contestants.forEach(contestant => {
-                const isRegistered = isContestantRegistered(contestant.name);
-                const div = document.createElement('div');
-                div.className = `contestant-item ${isRegistered ? 'registered' : ''}`;
-                div.innerHTML = `
-                    <div class="contestant-info">
-                        <div class="contestant-name">${contestant.name}</div>
-                        <div class="contestant-song">${contestant.song === '未指定' ? '<span class="text-muted">未指定歌曲</span>' : contestant.song}</div>
-                    </div>
-                    ${!isRegistered ? `
-                        <button class="btn btn-outline-primary btn-sm register-btn" 
-                                onclick="registerSingle('${contestant.name}', '${contestant.song}')">
-                            登记
-                        </button>
-                    ` : '<span class="badge bg-success">已登记</span>'}
-                `;
-                contestantList.appendChild(div);
-            });
-        }
+            try {
+                const contestants = await votingSystem.getContestants();
+                contestantList.innerHTML = '';
 
-        // 注册单个选手并更新显示
-        async function registerSingle(name, song) {
-            if (registerContestant(name, song)) {
-                await refreshDisplay();
-                Swal.fire({
-                    title: '登记成功',
-                    text: `选手 ${name} 已成功登记`,
-                    icon: 'success',
-                    confirmButtonText: '确定'
+                if (contestants.length === 0) {
+                    contestantList.innerHTML = `
+                        <div class="text-center">
+                            <div class="alert alert-info" role="alert">
+                                暂无选手参赛信息
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                contestants.forEach((contestant, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'contestant-item animate__animated animate__fadeIn';
+                    div.style.animationDelay = `${index * 0.1}s`;
+                    div.innerHTML = `
+                        <div class="contestant-number">${(index + 1).toString().padStart(2, '0')}</div>
+                        <div class="contestant-info">
+                            <div class="contestant-name">${contestant.name}</div>
+                            <div class="contestant-song">${contestant.song === '未指定' ? '<span class="text-muted">未指定歌曲</span>' : contestant.song}</div>
+                        </div>
+                    `;
+                    contestantList.appendChild(div);
                 });
+            } catch (error) {
+                contestantList.innerHTML = `
+                    <div class="text-center">
+                        <div class="alert alert-danger" role="alert">
+                            加载选手信息失败：${error.message}
+                        </div>
+                    </div>
+                `;
             }
-        }
-
-        // 一键注册所有选手
-        async function registerAll(contestants) {
-            let registered = 0;
-            let skipped = 0;
-
-            contestants.forEach(contestant => {
-                if (registerContestant(contestant.name, contestant.song)) {
-                    registered++;
-                } else {
-                    skipped++;
-                }
-            });
-
-            await refreshDisplay();
-
-            Swal.fire({
-                title: '批量登记完成',
-                html: `
-                    成功登记: ${registered} 名选手<br>
-                    已存在跳过: ${skipped} 名选手
-                `,
-                icon: 'success',
-                confirmButtonText: '确定'
-            }).then((result) => {
-                if (result.isConfirmed && registered > 0) {
-                    window.location.href = 'index.html';
-                }
-            });
-        }
-
-        // 刷新显示
-        async function refreshDisplay() {
-            const contestants = await loadContestants();
-            displayContestants(contestants);
         }
 
         // 页面加载完成后初始化
-        window.addEventListener('load', async () => {
-            const contestants = await loadContestants();
-            displayContestants(contestants);
-
-            // 绑定一键登记按钮事件
-            document.getElementById('registerAllBtn').addEventListener('click', () => {
-                registerAll(contestants);
-            });
-        });
+        window.addEventListener('load', displayContestants);
     </script>
 </body>
 </html> 

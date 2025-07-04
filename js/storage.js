@@ -1,45 +1,72 @@
 class VotingSystem {
     constructor() {
-        this.contestants = JSON.parse(localStorage.getItem('contestants')) || [];
+        this.contestants = [];
         this.votes = JSON.parse(localStorage.getItem('votes')) || {};
         this.voterVotes = JSON.parse(localStorage.getItem('voterVotes')) || {};
+        this.loadContestants();
     }
 
-    // 添加参赛者
-    addContestant(name, song = '') {
-        // 检查选手名称是否为空
-        if (!name || name.trim() === '') {
-            throw new Error('选手姓名不能为空');
+    // 从song.txt加载选手信息
+    async loadContestants() {
+        try {
+            const response = await fetch('song.txt');
+            if (!response.ok) {
+                throw new Error('无法加载选手名单文件');
+            }
+            const text = await response.text();
+            this.contestants = text.split('\n')
+                .map(line => line.trim())
+                .filter(line => line) // 过滤空行
+                .map(line => {
+                    const parts = line.split(/\s+/);
+                    return {
+                        id: this.generateId(parts[0]), // 使用名字生成固定ID
+                        name: parts[0],
+                        song: parts.slice(1).join(' ') || '未指定',
+                        votes: 0
+                    };
+                });
+            
+            // 恢复已有的投票数
+            this.contestants.forEach(contestant => {
+                contestant.votes = this.getVotesForContestant(contestant.id);
+            });
+        } catch (error) {
+            console.error('加载选手名单失败:', error);
+            this.contestants = [];
         }
-
-        // 检查选手名称是否重复
-        if (this.contestants.some(c => c.name === name.trim())) {
-            throw new Error('选手姓名已存在');
-        }
-
-        const contestant = {
-            id: Date.now().toString(),
-            name: name.trim(),
-            song: song ? song.trim() : '未指定',
-            votes: 0
-        };
-        this.contestants.push(contestant);
-        this.saveContestants();
-        return contestant;
     }
 
-    // 保存参赛者信息
-    saveContestants() {
-        localStorage.setItem('contestants', JSON.stringify(this.contestants));
+    // 使用名字生成固定ID
+    generateId(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            const char = name.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return 'contestant_' + Math.abs(hash).toString(36);
+    }
+
+    // 获取选手的投票数
+    getVotesForContestant(contestantId) {
+        let votes = 0;
+        Object.values(this.voterVotes).forEach(voterVotes => {
+            votes += voterVotes.filter(id => id === contestantId).length;
+        });
+        return votes;
     }
 
     // 获取所有参赛者
-    getContestants() {
+    async getContestants() {
+        if (this.contestants.length === 0) {
+            await this.loadContestants();
+        }
         return this.contestants;
     }
 
     // 投票
-    vote(voterId, contestantId) {
+    async vote(voterId, contestantId) {
         // 检查投票者是否已投过这个参赛者
         if (this.hasVotedFor(voterId, contestantId)) {
             throw new Error('您已经给这位选手投过票了！');
@@ -48,6 +75,13 @@ class VotingSystem {
         // 检查投票者是否还有剩余票数
         if (this.getRemainingVotes(voterId) <= 0) {
             throw new Error('您已经没有剩余票数了！');
+        }
+
+        // 检查选手是否存在
+        await this.getContestants();
+        const contestant = this.contestants.find(c => c.id === contestantId);
+        if (!contestant) {
+            throw new Error('选手不存在！');
         }
 
         // 初始化投票者的投票记录
@@ -59,14 +93,10 @@ class VotingSystem {
         this.voterVotes[voterId].push(contestantId);
         
         // 更新参赛者票数
-        const contestant = this.contestants.find(c => c.id === contestantId);
-        if (contestant) {
-            contestant.votes = (contestant.votes || 0) + 1;
-        }
+        contestant.votes = this.getVotesForContestant(contestantId);
 
-        // 保存数据
+        // 保存投票数据
         this.saveVotes();
-        this.saveContestants();
     }
 
     // 检查是否投过某参赛者
@@ -87,23 +117,26 @@ class VotingSystem {
     }
 
     // 获取排名结果
-    getResults() {
-        return [...this.contestants].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+    async getResults() {
+        await this.getContestants();
+        return [...this.contestants].sort((a, b) => b.votes - a.votes);
     }
 
     // 获取前三名
-    getTopThree() {
-        return this.getResults().slice(0, 3);
+    async getTopThree() {
+        const results = await this.getResults();
+        return results.slice(0, 3);
     }
 
-    // 重置所有数据
-    resetAll() {
-        localStorage.removeItem('contestants');
+    // 重置所有投票数据
+    resetVotes() {
         localStorage.removeItem('votes');
         localStorage.removeItem('voterVotes');
-        this.contestants = [];
         this.votes = {};
         this.voterVotes = {};
+        this.contestants.forEach(contestant => {
+            contestant.votes = 0;
+        });
     }
 }
 
