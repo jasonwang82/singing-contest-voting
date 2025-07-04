@@ -6,35 +6,31 @@ class VotingSystem {
         this.loadContestants();
     }
 
-    // 从song.txt加载选手信息
+    // 加载选手信息
     async loadContestants() {
-        try {
-            const response = await fetch('song.txt');
-            if (!response.ok) {
-                throw new Error('无法加载选手名单文件');
-            }
-            const text = await response.text();
-            this.contestants = text.split('\n')
-                .map(line => line.trim())
-                .filter(line => line) // 过滤空行
-                .map(line => {
-                    const parts = line.split(/\s+/);
-                    return {
-                        id: this.generateId(parts[0]), // 使用名字生成固定ID
-                        name: parts[0],
-                        song: parts.slice(1).join(' ') || '未指定',
-                        votes: 0
-                    };
-                });
-            
-            // 恢复已有的投票数
-            this.contestants.forEach(contestant => {
-                contestant.votes = this.getVotesForContestant(contestant.id);
+        // 参赛者名单
+        const contestantsList = [
+            "张三 我的中国心",
+            "王五"  // 没有填写歌曲
+        ];
+
+        this.contestants = contestantsList
+            .map(line => line.trim())
+            .filter(line => line) // 过滤空行
+            .map(line => {
+                const parts = line.split(/\s+/);
+                return {
+                    id: this.generateId(parts[0]), // 使用名字生成固定ID
+                    name: parts[0],
+                    song: parts.slice(1).join(' ') || '未指定',
+                    votes: 0
+                };
             });
-        } catch (error) {
-            console.error('加载选手名单失败:', error);
-            this.contestants = [];
-        }
+        
+        // 恢复已有的投票数
+        this.contestants.forEach(contestant => {
+            contestant.votes = this.getVotesForContestant(contestant.id);
+        });
     }
 
     // 使用名字生成固定ID
@@ -59,9 +55,6 @@ class VotingSystem {
 
     // 获取所有参赛者
     async getContestants() {
-        if (this.contestants.length === 0) {
-            await this.loadContestants();
-        }
         return this.contestants;
     }
 
@@ -78,7 +71,6 @@ class VotingSystem {
         }
 
         // 检查选手是否存在
-        await this.getContestants();
         const contestant = this.contestants.find(c => c.id === contestantId);
         if (!contestant) {
             throw new Error('选手不存在！');
@@ -118,7 +110,6 @@ class VotingSystem {
 
     // 获取排名结果
     async getResults() {
-        await this.getContestants();
         return [...this.contestants].sort((a, b) => b.votes - a.votes);
     }
 
