@@ -19,6 +19,30 @@
             display: inline-block;
             margin: 10px auto;
         }
+        .login-qr-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .divider-text {
+            position: relative;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .divider-text:before,
+        .divider-text:after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .divider-text:before {
+            left: 0;
+        }
+        .divider-text:after {
+            right: 0;
+        }
     </style>
 </head>
 <body>
@@ -32,15 +56,27 @@
         <div id="voterLogin" class="row justify-content-center">
             <div class="col-md-6">
                 <div class="card animate__animated animate__fadeInUp">
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label for="voterName" class="form-label">请输入您的姓名</label>
-                            <input type="text" class="form-control" id="voterName" required>
+                    <div class="card-body">
+                        <div class="login-qr-container">
+                            <h4 class="text-center mb-3">扫码进入投票</h4>
+                            <div id="loginQrCode" class="qr-code-container"></div>
+                            <p class="text-muted mt-2">使用手机扫描二维码进入投票页面</p>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-custom">进入投票</button>
+                        
+                        <div class="divider-text">
+                            <span class="px-2">或</span>
                         </div>
-                    </form>
+
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label for="voterName" class="form-label">请输入您的姓名</label>
+                                <input type="text" class="form-control" id="voterName" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-custom">进入投票</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,6 +119,31 @@
         let currentVoter = '';
         let qrCode = null;
         const qrCodeModal = new bootstrap.Modal(document.getElementById('qrCodeModal'));
+
+        // 生成登录页面的二维码
+        function generateLoginQRCode() {
+            const loginQrCodeElement = document.getElementById('loginQrCode');
+            const currentUrl = window.location.href;
+            
+            new QRCode(loginQrCodeElement, {
+                text: currentUrl,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        // 页面加载完成后生成登录二维码
+        window.addEventListener('load', function() {
+            if (!isMobile()) {
+                generateLoginQRCode();
+            } else {
+                document.querySelector('.login-qr-container').style.display = 'none';
+                document.querySelector('.divider-text').style.display = 'none';
+            }
+        });
 
         function updateRemainingVotes() {
             const remaining = votingSystem.getRemainingVotes(currentVoter);
@@ -221,10 +282,6 @@
         });
 
         // 检查是否是移动设备
-        if (isMobile()) {
-            checkUrlForVoting();
-        }
-
         function isMobile() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
