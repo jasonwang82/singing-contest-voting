@@ -1,9 +1,9 @@
 class VotingSystem {
     constructor() {
         this.contestants = [];
-        this.votes = JSON.parse(localStorage.getItem('votes')) || {};
         this.voterVotes = JSON.parse(localStorage.getItem('voterVotes')) || {};
         this.loadContestants();
+        this.updateVoteCounts(); // 初始化时更新票数
     }
 
     // 加载选手信息
@@ -27,9 +27,24 @@ class VotingSystem {
                 };
             });
         
-        // 恢复已有的投票数
+        this.updateVoteCounts(); // 加载选手后更新票数
+    }
+
+    // 更新所有选手的票数
+    updateVoteCounts() {
+        // 重置所有选手的票数
         this.contestants.forEach(contestant => {
-            contestant.votes = this.getVotesForContestant(contestant.id);
+            contestant.votes = 0;
+        });
+
+        // 重新计算每个选手的票数
+        Object.values(this.voterVotes).forEach(votes => {
+            votes.forEach(contestantId => {
+                const contestant = this.contestants.find(c => c.id === contestantId);
+                if (contestant) {
+                    contestant.votes++;
+                }
+            });
         });
     }
 
@@ -42,15 +57,6 @@ class VotingSystem {
             hash = hash & hash; // Convert to 32-bit integer
         }
         return 'contestant_' + Math.abs(hash).toString(36);
-    }
-
-    // 获取选手的投票数
-    getVotesForContestant(contestantId) {
-        let votes = 0;
-        Object.values(this.voterVotes).forEach(voterVotes => {
-            votes += voterVotes.filter(id => id === contestantId).length;
-        });
-        return votes;
     }
 
     // 获取所有参赛者
@@ -84,8 +90,8 @@ class VotingSystem {
         // 记录投票
         this.voterVotes[voterId].push(contestantId);
         
-        // 更新参赛者票数
-        contestant.votes = this.getVotesForContestant(contestantId);
+        // 更新所有选手的票数
+        this.updateVoteCounts();
 
         // 保存投票数据
         this.saveVotes();
@@ -121,13 +127,9 @@ class VotingSystem {
 
     // 重置所有投票数据
     resetVotes() {
-        localStorage.removeItem('votes');
         localStorage.removeItem('voterVotes');
-        this.votes = {};
         this.voterVotes = {};
-        this.contestants.forEach(contestant => {
-            contestant.votes = 0;
-        });
+        this.updateVoteCounts(); // 重置后更新票数
     }
 }
 
