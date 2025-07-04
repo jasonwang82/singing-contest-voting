@@ -181,19 +181,27 @@
             const contestantsList = document.getElementById('contestantsList');
             contestantsList.innerHTML = '';
 
+            if (contestants.length === 0) {
+                contestantsList.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-info" role="alert">
+                            暂无选手参赛，请等待选手登记。
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             contestants.forEach(contestant => {
                 const hasVoted = votingSystem.hasVotedFor(currentVoter, contestant.id);
                 const col = document.createElement('div');
                 col.className = 'col-md-4 mb-4';
                 
-                // 将选手数据转换为安全的字符串
-                const contestantData = encodeURIComponent(JSON.stringify(contestant));
-                
                 col.innerHTML = `
                     <div class="card contestant-card animate__animated animate__fadeIn">
                         <div class="card-body">
                             <h5 class="card-title">${contestant.name}</h5>
-                            <p class="card-text">演唱: ${contestant.song}</p>
+                            <p class="card-text">演唱: ${contestant.song === '未指定' ? '<span class="text-muted">未指定歌曲</span>' : contestant.song}</p>
                             <p class="vote-count">当前票数: ${contestant.votes || 0}</p>
                             <div class="d-grid gap-2">
                                 <button 

@@ -6,11 +6,21 @@ class VotingSystem {
     }
 
     // 添加参赛者
-    addContestant(name, song) {
+    addContestant(name, song = '') {
+        // 检查选手名称是否为空
+        if (!name || name.trim() === '') {
+            throw new Error('选手姓名不能为空');
+        }
+
+        // 检查选手名称是否重复
+        if (this.contestants.some(c => c.name === name.trim())) {
+            throw new Error('选手姓名已存在');
+        }
+
         const contestant = {
             id: Date.now().toString(),
-            name: name,
-            song: song,
+            name: name.trim(),
+            song: song ? song.trim() : '未指定',
             votes: 0
         };
         this.contestants.push(contestant);
