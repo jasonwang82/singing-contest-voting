@@ -10,8 +10,8 @@ class VotingSystem {
     async loadContestants() {
         // 参赛者名单
         const contestantsList = [
-            "张三 我的中国心",
-            "王五"  // 没有填写歌曲
+            "san hearty",
+            "melody"  // 没有填写歌曲
         ];
 
         this.contestants = contestantsList
@@ -46,6 +46,9 @@ class VotingSystem {
                 }
             });
         });
+
+        // 保存到 localStorage 以保持票数同步
+        localStorage.setItem('contestants', JSON.stringify(this.contestants));
     }
 
     // 使用名字生成固定ID
@@ -61,6 +64,7 @@ class VotingSystem {
 
     // 获取所有参赛者
     async getContestants() {
+        this.updateVoteCounts(); // 确保返回最新票数
         return this.contestants;
     }
 
@@ -112,16 +116,18 @@ class VotingSystem {
     // 保存投票数据
     saveVotes() {
         localStorage.setItem('voterVotes', JSON.stringify(this.voterVotes));
+        this.updateVoteCounts(); // 保存时更新票数
     }
 
     // 获取排名结果
     async getResults() {
+        this.updateVoteCounts(); // 确保返回最新票数
         return [...this.contestants].sort((a, b) => b.votes - a.votes);
     }
 
     // 获取前三名
     async getTopThree() {
-        const results = await this.getResults();
+        const results = await this.getResults(); // 这里会自动更新票数
         return results.slice(0, 3);
     }
 

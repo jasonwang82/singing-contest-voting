@@ -7,23 +7,80 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <style>
+        .vote-count {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .contestant-card {
+            transition: all 0.3s ease;
+        }
+        .contestant-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .rank-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #6c757d;
+        }
+        .song-name {
+            font-style: italic;
+            color: #6c757d;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="animate__animated animate__fadeIn">实时排名</h1>
+        <h1 class="text-center mb-4 animate__animated animate__fadeIn">实时排名</h1>
+        
+        <!-- 参赛者列表 -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-8">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">参赛者名单</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="contestantsList" class="row g-3">
+                            <!-- 参赛者将通过 JavaScript 动态添加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排名列表 -->
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div id="rankingList"></div>
-                <div class="card mt-4 animate__animated animate__fadeInUp">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="mb-0">当前排名</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="rankingList">
+                            <!-- 排名将通过 JavaScript 动态添加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按钮区域 -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <div class="card animate__animated animate__fadeInUp">
                     <div class="card-body text-center">
-                        <button id="endCompetition" class="btn btn-danger btn-custom">结束比赛</button>
-                        <a href="index.html" class="btn btn-secondary btn-custom">返回首页</a>
+                        <button id="endCompetition" class="btn btn-danger btn-lg me-3">结束比赛</button>
+                        <a href="index.html" class="btn btn-secondary btn-lg">返回首页</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <footer class="footer">
+
+    <footer class="footer mt-5">
         Powered by <a href="#" target="_blank">CodeBuddy</a>
     </footer>
 
@@ -31,54 +88,85 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/storage.js"></script>
     <script>
-        function displayRanking(showOnlyTop3 = false) {
+        // 显示所有参赛者
+        async function displayContestants() {
+            const contestants = await votingSystem.getContestants();
+            const contestantsList = document.getElementById('contestantsList');
+            contestantsList.innerHTML = '';
+
+            contestants.forEach(contestant => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6';
+                col.innerHTML = `
+                    <div class="card contestant-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${contestant.name}</h5>
+                            <p class="card-text song-name">演唱: ${contestant.song}</p>
+                            <div class="text-end">
+                                <div class="vote-count">${contestant.votes}</div>
+                                <small class="text-muted">总票数</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                contestantsList.appendChild(col);
+            });
+        }
+
+        // 显示排名
+        async function displayRanking(showOnlyTop3 = false) {
             const contestants = showOnlyTop3 ? 
-                votingSystem.getTopThree() : 
-                votingSystem.getResults();
+                await votingSystem.getTopThree() : 
+                await votingSystem.getResults();
             
             const rankingList = document.getElementById('rankingList');
             rankingList.innerHTML = '';
 
             contestants.forEach((contestant, index) => {
                 const isTop3 = index < 3;
-                const card = document.createElement('div');
-                card.className = `card mb-3 animate__animated animate__fadeInUp ${isTop3 ? 'winner' : ''}`;
-                card.style.animationDelay = `${index * 0.1}s`;
+                const row = document.createElement('div');
+                row.className = `card mb-3 animate__animated animate__fadeInUp ${isTop3 ? 'border-success' : ''}`;
+                row.style.animationDelay = `${index * 0.1}s`;
 
                 let medalEmoji = '';
-                if (showOnlyTop3) {
+                if (isTop3) {
                     medalEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
                 }
 
-                card.innerHTML = `
+                row.innerHTML = `
                     <div class="card-body">
                         <div class="row align-items-center">
                             <div class="col-2 text-center">
-                                <h2 class="mb-0">${index + 1}</h2>
+                                <span class="rank-number">#${index + 1}</span>
                             </div>
                             <div class="col-7">
-                                <h5 class="card-title mb-1">${contestant.name} ${medalEmoji}</h5>
-                                <p class="card-text text-muted mb-0">演唱: ${contestant.song}</p>
+                                <h5 class="mb-1">${contestant.name} ${medalEmoji}</h5>
+                                <p class="mb-0 song-name">${contestant.song}</p>
                             </div>
                             <div class="col-3 text-end">
-                                <h3 class="vote-count mb-0">${contestant.votes || 0}</h3>
+                                <div class="vote-count">${contestant.votes}</div>
                                 <small class="text-muted">票</small>
                             </div>
                         </div>
                     </div>
                 `;
-                rankingList.appendChild(card);
+                rankingList.appendChild(row);
             });
         }
 
-        // 自动更新排名
+        // 自动更新
         function startAutoUpdate() {
+            displayContestants();
             displayRanking();
-            setInterval(displayRanking, 5000); // 每5秒更新一次
+            setInterval(() => {
+                displayContestants();
+                displayRanking();
+            }, 5000); // 每5秒更新一次
         }
 
-        document.getElementById('endCompetition').addEventListener('click', function() {
-            Swal.fire({
+        // 结束比赛按钮事件
+        document.getElementById('endCompetition').addEventListener('click', async function() {
+            const result = await Swal.fire({
                 title: '确定要结束比赛吗？',
                 text: "结束后将只显示前三名！",
                 icon: 'warning',
@@ -87,26 +175,31 @@
                 cancelButtonColor: '#3085d6',
                 confirmButtonText: '是的，结束比赛',
                 cancelButtonText: '取消'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    displayRanking(true);
-                    this.style.display = 'none';
-                    
-                    const winners = votingSystem.getTopThree();
-                    let message = '比赛结果：\n';
-                    winners.forEach((winner, index) => {
-                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
-                        message += `${medal} ${winner.name} - ${winner.votes}票\n`;
-                    });
-
-                    Swal.fire({
-                        title: '比赛结束！',
-                        html: message.replace(/\n/g, '<br>'),
-                        icon: 'success',
-                        confirmButtonText: '确定'
-                    });
-                }
             });
+
+            if (result.isConfirmed) {
+                const winners = await votingSystem.getTopThree();
+                
+                // 隐藏参赛者列表，只显示前三名
+                document.querySelector('.row:first-child').style.display = 'none';
+                displayRanking(true);
+                this.style.display = 'none';
+
+                let message = '<div class="text-center">';
+                winners.forEach((winner, index) => {
+                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+                    message += `<h4>${medal} ${winner.name}</h4>`;
+                    message += `<p class="mb-3">${winner.song}<br>获得 ${winner.votes} 票</p>`;
+                });
+                message += '</div>';
+
+                await Swal.fire({
+                    title: '比赛结束！',
+                    html: message,
+                    icon: 'success',
+                    confirmButtonText: '确定'
+                });
+            }
         });
 
         // 启动自动更新
