@@ -7,6 +7,19 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <style>
+        .qr-code-modal .modal-content {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        .qr-code-container {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 10px auto;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -39,18 +52,64 @@
             </div>
         </div>
     </div>
+
+    <!-- QR Code Modal -->
+    <div class="modal fade qr-code-modal" id="qrCodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">扫码投票</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="qr-code-container">
+                        <div id="modalQrCode"></div>
+                    </div>
+                    <p class="mt-3">使用手机扫描二维码为选手投票</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         Powered by <a href="#" target="_blank">CodeBuddy</a>
     </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
     <script src="js/storage.js"></script>
     <script>
         let currentVoter = '';
+        let qrCode = null;
+        const qrCodeModal = new bootstrap.Modal(document.getElementById('qrCodeModal'));
 
         function updateRemainingVotes() {
             const remaining = votingSystem.getRemainingVotes(currentVoter);
             document.getElementById('remainingVotes').textContent = remaining;
+        }
+
+        function showQRCode(contestant) {
+            const modalQrCodeElement = document.getElementById('modalQrCode');
+            modalQrCodeElement.innerHTML = '';
+
+            // 创建投票链接，包含选手ID和当前投票者ID
+            const voteUrl = `${window.location.origin}${window.location.pathname}?action=vote&contestantId=${contestant.id}&voterId=${encodeURIComponent(currentVoter)}`;
+            
+            // 生成新的二维码
+            if (qrCode) {
+                qrCode.clear();
+            }
+            qrCode = new QRCode(modalQrCodeElement, {
+                text: voteUrl,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            qrCodeModal.show();
         }
 
         function displayContestants() {
@@ -68,12 +127,20 @@
                             <h5 class="card-title">${contestant.name}</h5>
                             <p class="card-text">演唱: ${contestant.song}</p>
                             <p class="vote-count">当前票数: ${contestant.votes || 0}</p>
-                            <button 
-                                class="btn ${hasVoted ? 'btn-secondary' : 'btn-primary'} btn-custom" 
-                                onclick="voteForContestant('${contestant.id}')"
-                                ${hasVoted ? 'disabled' : ''}>
-                                ${hasVoted ? '已投票' : '投票'}
-                            </button>
+                            <div class="d-grid gap-2">
+                                <button 
+                                    class="btn ${hasVoted ? 'btn-secondary' : 'btn-primary'} btn-custom" 
+                                    onclick="voteForContestant('${contestant.id}')"
+                                    ${hasVoted ? 'disabled' : ''}>
+                                    ${hasVoted ? '已投票' : '投票'}
+                                </button>
+                                <button 
+                                    class="btn btn-outline-primary btn-custom"
+                                    onclick="showQRCode(${JSON.stringify(contestant)})"
+                                    ${hasVoted ? 'disabled' : ''}>
+                                    显示投票二维码
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -115,6 +182,26 @@
             }
         }
 
+        // 检查URL参数是否包含投票信息
+        function checkUrlForVoting() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+            const contestantId = urlParams.get('contestantId');
+            const voterId = urlParams.get('voterId');
+
+            if (action === 'vote' && contestantId && voterId) {
+                currentVoter = decodeURIComponent(voterId);
+                document.getElementById('voterLogin').style.display = 'none';
+                document.getElementById('votingArea').style.display = 'block';
+                updateRemainingVotes();
+                displayContestants();
+                voteForContestant(contestantId);
+                
+                // 清除URL参数
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             currentVoter = document.getElementById('voterName').value.trim();
@@ -125,6 +212,15 @@
                 displayContestants();
             }
         });
+
+        // 检查是否是移动设备
+        if (isMobile()) {
+            checkUrlForVoting();
+        }
+
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
     </script>
 </body>
 </html> 
