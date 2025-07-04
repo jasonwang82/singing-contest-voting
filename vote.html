@@ -89,12 +89,15 @@
             document.getElementById('remainingVotes').textContent = remaining;
         }
 
-        function showQRCode(contestant) {
+        function showQRCode(contestantId, contestantName) {
             const modalQrCodeElement = document.getElementById('modalQrCode');
             modalQrCodeElement.innerHTML = '';
 
             // 创建投票链接，包含选手ID和当前投票者ID
-            const voteUrl = `${window.location.origin}${window.location.pathname}?action=vote&contestantId=${contestant.id}&voterId=${encodeURIComponent(currentVoter)}`;
+            const voteUrl = `${window.location.origin}${window.location.pathname}?action=vote&contestantId=${contestantId}&voterId=${encodeURIComponent(currentVoter)}`;
+            
+            // 更新模态框标题
+            document.querySelector('#qrCodeModal .modal-title').textContent = `为 ${contestantName} 投票`;
             
             // 生成新的二维码
             if (qrCode) {
@@ -121,6 +124,10 @@
                 const hasVoted = votingSystem.hasVotedFor(currentVoter, contestant.id);
                 const col = document.createElement('div');
                 col.className = 'col-md-4 mb-4';
+                
+                // 将选手数据转换为安全的字符串
+                const contestantData = encodeURIComponent(JSON.stringify(contestant));
+                
                 col.innerHTML = `
                     <div class="card contestant-card animate__animated animate__fadeIn">
                         <div class="card-body">
@@ -136,7 +143,7 @@
                                 </button>
                                 <button 
                                     class="btn btn-outline-primary btn-custom"
-                                    onclick="showQRCode(${JSON.stringify(contestant)})"
+                                    onclick="showQRCode('${contestant.id}', '${contestant.name}')"
                                     ${hasVoted ? 'disabled' : ''}>
                                     显示投票二维码
                                 </button>
