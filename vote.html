@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投票 - 歌唱比赛投票系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="remaining-votes animate__animated animate__fadeIn">
+            剩余票数: <span id="remainingVotes">3</span>
+        </div>
+        
+        <h1 class="animate__animated animate__fadeIn">投票</h1>
+        
+        <div id="voterLogin" class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card animate__animated animate__fadeInUp">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="voterName" class="form-label">请输入您的姓名</label>
+                            <input type="text" class="form-control" id="voterName" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-custom">进入投票</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="votingArea" class="row" style="display: none;">
+            <div id="contestantsList" class="row"></div>
+            <div class="col-12 text-center mt-4">
+                <a href="index.html" class="btn btn-secondary btn-custom">返回首页</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/storage.js"></script>
+    <script>
+        let currentVoter = '';
+
+        function updateRemainingVotes() {
+            const remaining = votingSystem.getRemainingVotes(currentVoter);
+            document.getElementById('remainingVotes').textContent = remaining;
+        }
+
+        function displayContestants() {
+            const contestants = votingSystem.getContestants();
+            const contestantsList = document.getElementById('contestantsList');
+            contestantsList.innerHTML = '';
+
+            contestants.forEach(contestant => {
+                const hasVoted = votingSystem.hasVotedFor(currentVoter, contestant.id);
+                const col = document.createElement('div');
+                col.className = 'col-md-4 mb-4';
+                col.innerHTML = `
+                    <div class="card contestant-card animate__animated animate__fadeIn">
+                        <div class="card-body">
+                            <h5 class="card-title">${contestant.name}</h5>
+                            <p class="card-text">演唱: ${contestant.song}</p>
+                            <p class="vote-count">当前票数: ${contestant.votes || 0}</p>
+                            <button 
+                                class="btn ${hasVoted ? 'btn-secondary' : 'btn-primary'} btn-custom" 
+                                onclick="voteForContestant('${contestant.id}')"
+                                ${hasVoted ? 'disabled' : ''}>
+                                ${hasVoted ? '已投票' : '投票'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                contestantsList.appendChild(col);
+            });
+        }
+
+        function voteForContestant(contestantId) {
+            try {
+                votingSystem.vote(currentVoter, contestantId);
+                updateRemainingVotes();
+                displayContestants();
+                
+                const remaining = votingSystem.getRemainingVotes(currentVoter);
+                if (remaining === 0) {
+                    Swal.fire({
+                        title: '投票完成！',
+                        text: '您已使用完所有票数',
+                        icon: 'success',
+                        confirmButtonText: '确定'
+                    }).then(() => {
+                        window.location.href = 'index.html';
+                    });
+                } else {
+                    Swal.fire({
+                        title: '投票成功！',
+                        text: `还剩 ${remaining} 票`,
+                        icon: 'success',
+                        confirmButtonText: '确定'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: '投票失败！',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: '确定'
+                });
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            currentVoter = document.getElementById('voterName').value.trim();
+            if (currentVoter) {
+                document.getElementById('voterLogin').style.display = 'none';
+                document.getElementById('votingArea').style.display = 'block';
+                updateRemainingVotes();
+                displayContestants();
+            }
+        });
+    </script>
+</body>
+</html> 

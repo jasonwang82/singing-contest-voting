@@ -1,0 +1,84 @@
+body {
+    background: linear-gradient(135deg, #1e2a78 0%, #ff3864 100%);
+    min-height: 100vh;
+    font-family: 'Arial', sans-serif;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+}
+
+.btn-custom {
+    margin: 10px;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-custom:hover {
+    transform: scale(1.05);
+}
+
+h1, h2 {
+    color: white;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.contestant-card {
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.contestant-card:hover {
+    transform: translateY(-5px);
+}
+
+.vote-count {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1e2a78;
+}
+
+.winner {
+    position: relative;
+    overflow: hidden;
+}
+
+.winner::before {
+    content: '🏆';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 2rem;
+    transform: rotate(15deg);
+}
+
+.remaining-votes {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.qr-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+#qrcode {
+    display: inline-block;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+} 

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选手登记 - 歌唱比赛投票系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        .qr-code-wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="animate__animated animate__fadeIn">选手登记</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card animate__animated animate__fadeInUp">
+                    <div class="card-body">
+                        <div class="qr-container mb-4">
+                            <h4 class="text-center mb-3">扫码登记</h4>
+                            <div class="text-center">
+                                <div class="qr-code-wrapper">
+                                    <div id="qrcode"></div>
+                                </div>
+                            </div>
+                            <p class="text-center text-muted mt-2">使用手机扫描二维码进行登记</p>
+                        </div>
+                        <div class="text-center mb-4">
+                            <div class="divider d-flex align-items-center justify-content-center">
+                                <span class="mx-3 text-muted">或</span>
+                            </div>
+                        </div>
+                        <form id="registerForm">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">选手姓名</label>
+                                <input type="text" class="form-control" id="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="song" class="form-label">演唱歌曲</label>
+                                <input type="text" class="form-control" id="song" required>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-custom">登记参赛</button>
+                                <a href="index.html" class="btn btn-secondary btn-custom">返回首页</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <script src="js/storage.js"></script>
+    <script>
+        // 等待页面完全加载后再生成二维码
+        window.addEventListener('load', function() {
+            // 获取完整的URL
+            const currentUrl = window.location.href;
+            
+            // 确保二维码容器存在
+            const qrcodeElement = document.getElementById("qrcode");
+            if (qrcodeElement) {
+                // 清空容器
+                qrcodeElement.innerHTML = '';
+                
+                // 生成新的二维码
+                new QRCode(qrcodeElement, {
+                    text: currentUrl,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+        });
+
+        // 处理表单提交
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const song = document.getElementById('song').value.trim();
+
+            if (!name || !song) {
+                Swal.fire({
+                    title: '请填写完整信息',
+                    text: '姓名和歌曲名称都是必填的',
+                    icon: 'warning',
+                    confirmButtonText: '确定'
+                });
+                return;
+            }
+
+            try {
+                votingSystem.addContestant(name, song);
+                Swal.fire({
+                    title: '登记成功！',
+                    text: '您已成功登记参赛',
+                    icon: 'success',
+                    confirmButtonText: '确定'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'index.html';
+                    }
+                });
+            } catch (error) {
+                Swal.fire({
+                    title: '出错了！',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: '确定'
+                });
+            }
+        });
+
+        // 检查是否是移动设备访问
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // 如果是移动设备访问，隐藏二维码部分
+        if (isMobile()) {
+            document.querySelector('.qr-container').style.display = 'none';
+            document.querySelector('.divider').style.display = 'none';
+        }
+    </script>
+</body>
+</html> 
